@@ -23,7 +23,7 @@ PeopleTracker::PeopleTracker() :
     // Use a private node handle so that multiple instances of the node can be run simultaneously
     // while using different parameters.
     ros::NodeHandle private_node_handle("~");
-    private_node_handle.param("target_frame", target_frame, std::string("/base_link"));
+    private_node_handle.param("target_frame", target_frame, std::string("/base"));
     private_node_handle.param("people_array", pta_topic, std::string("/upper_body_detector/bounding_box_centres"));
     parseParams(private_node_handle);
 
@@ -64,8 +64,8 @@ void PeopleTracker::parseParams(ros::NodeHandle n) {
     ROS_ASSERT(cv_noise.getType() == XmlRpc::XmlRpcValue::TypeStruct);
     ROS_INFO_STREAM("Constant Velocity Model noise: " << cv_noise);
     ekf == NULL ?
-        ukf->createConstantVelocityModel(cv_noise["x"], cv_noise["y"]) :
-        ekf->createConstantVelocityModel(cv_noise["x"], cv_noise["y"]);
+            ukf->createConstantVelocityModel(cv_noise["x"], cv_noise["y"], cv_noise["z"]) :
+            ekf->createConstantVelocityModel(cv_noise["x"], cv_noise["y"], cv_noise["z"]);
     ROS_INFO_STREAM("Created " << filter << " based tracker using constant velocity prediction model.");
 
     XmlRpc::XmlRpcValue detectors;
@@ -78,11 +78,13 @@ void PeopleTracker::parseParams(ros::NodeHandle n) {
                 ukf->addDetectorModel(it->first,
                     detectors[it->first]["matching_algorithm"] == "NN" ? NN : detectors[it->first]["matching_algorithm"] == "NNJPDA" ? NNJPDA : throw(asso_exception()),
                     detectors[it->first]["cartesian_noise_params"]["x"],
-                    detectors[it->first]["cartesian_noise_params"]["y"]) :
+            		detectors[it->first]["cartesian_noise_params"]["y"],
+                    detectors[it->first]["cartesian_noise_params"]["z"]) :
                 ekf->addDetectorModel(it->first,
                     detectors[it->first]["matching_algorithm"] == "NN" ? NN : detectors[it->first]["matching_algorithm"] == "NNJPDA" ? NNJPDA : throw(asso_exception()),
                     detectors[it->first]["cartesian_noise_params"]["x"],
-                    detectors[it->first]["cartesian_noise_params"]["y"]);
+                    detectors[it->first]["cartesian_noise_params"]["y"],
+                    detectors[it->first]["cartesian_noise_params"]["z"]);
         } catch (std::exception& e) {
             ROS_FATAL_STREAM(""
                     << e.what()
@@ -256,27 +258,22 @@ void PeopleTracker::detectorCallback(const geometry_msgs::PoseArray::ConstPtr &p
 
             //Transform
             try {
-                // Transform into robot coordinate system /base_link for the caluclation of relative distances and angles
-                ROS_DEBUG("Transforming received position into %s coordinate system.", BASE_LINK);
-                listener->waitForTransform(poseInCamCoords.header.frame_id, BASE_LINK, poseInCamCoords.header.stamp, ros::Duration(3.0));
-                listener->transformPose(BASE_LINK, ros::Time(0), poseInCamCoords, poseInCamCoords.header.frame_id, poseInRobotCoords);
-
-                // Transform into given traget frame. Default /map
-                if(strcmp(target_frame.c_str(), BASE_LINK)) {
+                // Transform into given traget frame. Default /base
+                if(strcmp(target_frame.c_str(), poseInCamCoords.header.frame_id.c_str())) {
                     ROS_DEBUG("Transforming received position into %s coordinate system.", target_frame.c_str());
                     listener->waitForTransform(poseInCamCoords.header.frame_id, target_frame, poseInCamCoords.header.stamp, ros::Duration(3.0));
                     listener->transformPose(target_frame, ros::Time(0), poseInCamCoords, poseInCamCoords.header.frame_id, poseInTargetCoords);
                 } else {
                     poseInTargetCoords = poseInRobotCoords;
                 }
-            }
-            catch(tf::TransformException ex) {
-                ROS_WARN("Failed transform: %s", ex.what());
-                return;
-            }
+        }
 
-            poseInTargetCoords.pose.position.z = 0.0;
-            poseInRobotCoords.pose.position.z = 0.0;
+        catch(tf::TransformException ex) {
+            ROS_WARN("Failed transform: %s", ex.what());
+            return;
+        }
+        // std::cout << i << ": " << std::endl << pt << std::endl;
+        //std::cout << "robotTF: " << std::endl << poseInTargetCoords.pose << std::endl;
 
             ppl.push_back(poseInTargetCoords.pose.position);
 

@@ -421,7 +421,7 @@ geometry_msgs::PoseArray transform(MdlPeopleTrackerArray pta) {
 
         //Transform
         try {
-            // Transform into given traget frame. Default /map
+            // Transform into given traget frame. Default /base
             ROS_DEBUG("Transforming received position into %s coordinate system.", target_frame.c_str());
             listener->waitForTransform(poseInCamCoords.header.frame_id, target_frame, poseInCamCoords.header.stamp, ros::Duration(3.0));
             listener->transformPose(target_frame, ros::Time(0), poseInCamCoords, poseInCamCoords.header.frame_id, poseInTargetCoords);
@@ -723,7 +723,7 @@ int main(int argc, char **argv)
     ros::NodeHandle private_node_handle_("~");
     private_node_handle_.param("queue_size", queue_size, int(10));
     private_node_handle_.param("config_file", config_file, string(""));
-    private_node_handle_.param("target_frame", target_frame, string("/map"));
+    private_node_handle_.param("target_frame", target_frame, string("/base"));
 
     private_node_handle_.param("camera_namespace", cam_ns, string("/head_xtion"));
     private_node_handle_.param("ground_plane", topic_gp, string("/ground_plane"));

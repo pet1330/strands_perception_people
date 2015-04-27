@@ -34,7 +34,7 @@
 #include "people_tracker/simple_tracking.h"
 #include "people_tracker/asso_exception.h"
 
-#define BASE_LINK "/base_link"
+#define BASE_LINK "/base"
 
 class PeopleTracker
 {
@@ -138,66 +138,24 @@ private:
             int action,
             geometry_msgs::Pose pose) {
         geometry_msgs::Vector3 scale;
-        scale.x = 0.35;
-        scale.y = 0.35;
-        scale.z = 0.7;
-        std_msgs::ColorRGBA color;
-        color.a = 1.0;
-        color.r = 139.0F/255.0F;
-        color.g = 0.0F/255.0F;
-        color.b = 0.0F/255.0F;
-        pose.position.z = 1.1;
-        return createMarker(id, visualization_msgs::Marker::CYLINDER, action, pose, scale, color);
-    }
-
-    std::vector<visualization_msgs::Marker> createLegs(
-            int idl, int idr,
-            int action,
-            geometry_msgs::Pose pose) {
-        std::vector<visualization_msgs::Marker> legs;
-        geometry_msgs::Vector3 scale;
-        scale.x = 0.15;
-        scale.y = 0.2;
-        scale.z = 0.8;
-        std_msgs::ColorRGBA color;
-        color.a = 1.0;
-        color.r = 0.0F/255.0F;
-        color.g = 0.0F/255.0F;
-        color.b = 139.0F/255.0F;
-        legs.push_back(createMarker(idl, visualization_msgs::Marker::CYLINDER, action, generate_extremity_position(pose, 0.1, 0.0, 0.4), scale, color));
-        legs.push_back(createMarker(idr, visualization_msgs::Marker::CYLINDER, action, generate_extremity_position(pose, -0.1, 0.0, 0.4), scale, color));
-        return legs;
-    }
-
-    std::vector<visualization_msgs::Marker> createArms(
-            int idl, int idr,
-            int action,
-            geometry_msgs::Pose pose) {
-        std::vector<visualization_msgs::Marker> arms;
-        geometry_msgs::Vector3 scale;
         scale.x = 0.1;
         scale.y = 0.1;
-        scale.z = 0.7;
+        scale.z = 0.01;
         std_msgs::ColorRGBA color;
         color.a = 1.0;
         color.r = 139.0F/255.0F;
         color.g = 0.0F/255.0F;
         color.b = 0.0F/255.0F;
-        arms.push_back(createMarker(idl, visualization_msgs::Marker::CYLINDER, action, generate_extremity_position(pose, 0.2, 0.0, 1.1), scale, color));
-        arms.push_back(createMarker(idr, visualization_msgs::Marker::CYLINDER, action, generate_extremity_position(pose, -0.2, 0.0, 1.1), scale, color));
-        return arms;
+        //pose.position.z = 0.2;
+
+        return createMarker(id, visualization_msgs::Marker::CYLINDER, action, pose, scale, color);
     }
 
     std::vector<visualization_msgs::Marker> createHuman(
             int id,
             geometry_msgs::Pose pose) {
         std::vector<visualization_msgs::Marker> human;
-        human.push_back(createHead(id++, visualization_msgs::Marker::ADD, pose));
         human.push_back(createBody(id++, visualization_msgs::Marker::ADD, pose));
-        std::vector<visualization_msgs::Marker> legs = createLegs(id++, id++, visualization_msgs::Marker::ADD, pose);
-        human.insert(human.end(), legs.begin(), legs.end());
-        std::vector<visualization_msgs::Marker> arms = createArms(id++, id++, visualization_msgs::Marker::ADD, pose);
-        human.insert(human.end(), arms.begin(), arms.end());
         return human;
     }
 
@@ -222,8 +180,8 @@ private:
 
     boost::uuids::uuid dns_namespace_uuid;
 
-    SimpleTracking<EKFilter> *ekf = NULL;
-    SimpleTracking<UKFilter> *ukf = NULL;
+    SimpleTracking<EKFilter> *ekf ;//= NULL;
+    SimpleTracking<UKFilter> *ukf ;//= NULL;
     std::map<std::pair<std::string, std::string>, ros::Subscriber> subscribers;
 };
 
